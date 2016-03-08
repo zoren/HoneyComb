@@ -44,8 +44,10 @@ module ShortestPath =
         create <| dir%6
     !currentCellRef
 
+  open System.Collections.Generic
+
   let findAll cell =
-    let s = System.Collections.Generic.HashSet(HashIdentity.Reference)
+    let s = HashSet(HashIdentity.Reference)
     let rec loop c =
       if s.Add c
       then c.Neighbours |> Seq.choose id |> Seq.iter loop
@@ -60,3 +62,32 @@ module ShortestPath =
     for i = 1 to n do
       c := addRing !c i
     findAll !c
+
+  let tryGetValueOpt (d:Dictionary<_,_>) k =
+    match d.TryGetValue k with
+    | true, v -> Some v
+    | false, _ -> None
+
+  // shameless copy from wikipedia
+  let djikstra source =
+    let Q = HashSet(HashIdentity.Reference)
+    findAll source |> Seq.iter (ignore << Q.Add)
+    let dist = Dictionary(HashIdentity.Reference)
+    Q |> Seq.iter (fun c -> dist.[c] <- System.Int32.MaxValue)
+    dist.[source] <- 0
+    while Q.Count <> 0 do
+      let u =
+        Q
+          |> Seq.choose (fun v -> (tryGetValueOpt dist v) |> Option.map (fun d -> v, d))
+          |> Seq.minBy snd |> fst
+      ignore <| Q.Remove u
+      u.Neighbours
+        |> Seq.choose id
+        |> Seq.iter
+          (fun v ->
+            assert (dist.[u] <> System.Int32.MaxValue)
+            let alt = dist.[u] + 1
+            if alt < dist.[v]
+            then
+              dist.[v] <- alt)
+    dist
