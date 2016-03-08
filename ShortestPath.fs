@@ -1,5 +1,7 @@
 ﻿namespace HoneyComb
-
+// The 23rd Annual
+// ACM International Collegiate Programming Contest WORLD FINALS
+// Problem: A
 module ShortestPath =
   let inc v i = (v + i + 6) % 6
 
