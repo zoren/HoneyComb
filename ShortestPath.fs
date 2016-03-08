@@ -20,11 +20,23 @@ module ShortestPath =
     setNeighbour c1 dir c2
     setNeighbour c2 (inc dir 3) c1
 
-  let addRing initCell ring =
-    let currentCellRef = ref initCell
+  open System.Collections.Generic
+
+  exception ReachedMax
+
+  let makeComb max =
+    let list = List()
+    let init = mkCell 1
+    list.Add init
+    let currentCellRef = ref init
+    let stopRef = ref false
     let create dir =
       let currentCell = !currentCellRef
-      let newNode = mkCell <| currentCell.Label + 1
+      let lab = currentCell.Label + 1
+      if lab > max
+      then raise ReachedMax
+      let newNode = mkCell lab
+      list.Add newNode
       connect currentCell dir newNode
       let rotDir = inc dir 1
       let prevRotOpt = currentCell.Neighbours.[rotDir]
@@ -35,16 +47,20 @@ module ShortestPath =
             |> Option.iter (fun n' -> connect newNode (inc dir 1) n')
           )
       currentCellRef := newNode
-    create 0
-    let startCell = !currentCellRef
-    for i = 0 to ring - 2 do
-      create 1
-    for dir = 2 to 6 do
-      for i = 0 to ring - 1 do
-        create <| dir%6
-    !currentCellRef
-
-  open System.Collections.Generic
+    try
+      let ringRef = ref 1
+      while true do
+        let ring = !ringRef
+        incr ringRef
+        create 0
+        for i = 0 to ring - 2 do
+          create 1
+        for dir = 2 to 6 do
+          for i = 0 to ring - 1 do
+            create <| dir % 6
+      failwith "internal error"
+    with
+    | ReachedMax -> list
 
   let findAll cell =
     let s = HashSet(HashIdentity.Reference)
@@ -54,14 +70,6 @@ module ShortestPath =
       else ()
     loop cell
     s :> _ seq
-
-  let mkComb n =
-    assert (n >= 0)
-    let center = mkCell 1
-    let c = ref center
-    for i = 1 to n do
-      c := addRing !c i
-    findAll !c
 
   let tryGetValueOpt (d:Dictionary<_,_>) k =
     match d.TryGetValue k with
@@ -91,3 +99,9 @@ module ShortestPath =
             then
               dist.[v] <- alt)
     dist
+
+  let shortest src dest =
+    let myComb = makeComb <| max src dest
+    let get n = myComb.[n-1]
+    let distDic = djikstra <| get src
+    distDic.[get dest]
