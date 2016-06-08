@@ -1,6 +1,7 @@
 ﻿namespace HoneyComb
 
 module GraphViz =
+    // dette er en seriøs kommentar
     // change this as needed for your local environment
     let graphVizPath = @"C:\Program Files (x86)\Graphviz2.34\bin\"
 
